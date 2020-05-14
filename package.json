@@ -1,13 +1,16 @@
 {
-  "name": "ramadan-time-cli",
+  "name": "ramadan-time-bd",
   "version": "1.0.0",
-  "description": "",
+  "description": "A cli application to get iftar and suhoor time in Bangladesh",
   "main": "cli.js",
+  "bin": {
+    "ramadan-time": "cli.js"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
-  "author": "",
+  "author": "Md. Atiquzzaman Soikat <atik.aiub@gmail.com>",
   "license": "ISC",
   "dependencies": {
     "axios": "^0.19.2",
