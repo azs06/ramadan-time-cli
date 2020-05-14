@@ -9,8 +9,11 @@ const chalk = require('chalk')
 
 
 const sheetId = '1VueNvU-ipyjDhvKsU19nNlHkz70k6i5u5Rlnyz-TmE8';
-//const log = (input, type = 'log') => console[type](util.inspect(input, false, null, true))
-const city = 'chuadanga'
+const prettyLog = (input, type = 'log') => console[type](util.inspect(input, false, null, true))
+const city = (()=> {
+	if(argv.district) return argv.district
+	return 'dhaka'
+})()
 const spinner = ora('Loading...')
 const newline = "\n";
 const boxenOptions = {
@@ -64,17 +67,16 @@ function fetchSheetData(sheetId, number){
 
 }
 
-async function initRamadanTime() {
-  spinner.start();	
-  const data = await fetchSheetData(sheetId, 1)
-  const todaysRamadanTime = getRamadanTime(new Date(), data.data);
-  spinner.stop();
-  spinner.succeed();
+function displayData(todaysRamadanTime) {
+  const districtOutput = chalk.cyan.bold(`District         ${todaysRamadanTime.district.replace('District', '')}`);	
   const ramadan = chalk.white.bold(`Ramdan           ${todaysRamadanTime.ramadan}`);
   const suhoor = chalk.white(`Suhoor           ${todaysRamadanTime.suhoor}`);
   const fajr = chalk.white(`Fajr             ${todaysRamadanTime.fajr}`);
   const iftar = chalk.white(`Iftar            ${todaysRamadanTime.iftar}`);
   const output = 
+  districtOutput+
+  newline+
+  newline+
   ramadan +
   newline+
   newline+
@@ -85,9 +87,43 @@ async function initRamadanTime() {
   newline+
   newline+
   iftar;
-
-  console.log(chalk.green(boxen(output, boxenOptions)))
+  console.log(chalk.green(boxen(output, boxenOptions)))	
 }
+
+function addMinutes(baseTime, minutesToAdd){
+	return moment(baseTime, 'h:mm:ss A')
+          .add(Number(minutesToAdd), 'minutes')
+          .format('LT')
+}
+
+function updateTimeDiff(ramadanObject, timeDiffObject) {
+	const ramadanObjectToUpdate = JSON.parse(JSON.stringify(ramadanObject))
+	ramadanObjectToUpdate.suhoor = addMinutes(ramadanObject.suhoor, timeDiffObject.suhoor)
+	ramadanObjectToUpdate.fajr = addMinutes(ramadanObject.fajr, timeDiffObject.suhoor)
+	ramadanObjectToUpdate.iftar = addMinutes(ramadanObject.iftar, timeDiffObject.iftar)
+	return ramadanObjectToUpdate;
+}
+
+async function initRamadanTime() {
+  spinner.start();	
+  const data = await fetchSheetData(sheetId, 1)
+  const districtData = await fetchSheetData(sheetId, 2);
+  const districtTimeDiff = districtData.data.find(object => object.district.toLowerCase().includes(city))
+  const todaysRamadanTime = (() => {
+  	const ramadanObject = getRamadanTime(new Date(), data.data);
+  	return updateTimeDiff(ramadanObject, districtTimeDiff)
+  })()
+
+  spinner.stop();
+  spinner.succeed();
+  if(todaysRamadanTime) {
+  	displayData({district: districtTimeDiff.district, ...todaysRamadanTime})  	
+  }else{
+  	console.log(chalk.red('Not available'))
+  }
+}
+
+
 
 
 initRamadanTime()
